@@ -1,37 +1,43 @@
 ﻿using System;
-using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 
 class Program
 {
     static void Main(string[] args)
     {
-        Console.WriteLine("Enter your name: ");
-        string username =   Console.ReadLine();
+        Console.WriteLine("Enter your name:");
+        string username = Console.ReadLine() ?? string.Empty;
 
-        using (var clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+        using var clientSocket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+
+        try
         {
-            clientDocket.Connect("127.0.0.1", 8888);
+            clientSocket.Connect("127.0.0.1", 8888);
 
             byte[] usernameBytes = Encoding.ASCII.GetBytes(username);
-            clientSocket.Send()(usernameBytes);
+            clientSocket.Send(usernameBytes);
 
-            Thread receiveThread = new Thread(() => ReceiveThreadMessages(clientSocket));
+            var receiveThread = new Thread(() => ReceiveMessage(clientSocket));
             receiveThread.Start();
 
-            Console.WriteLine("conectado al servidor, escriba su mensaje: ");
+            Console.WriteLine("Connected to the server, type your message:");
             string message = "";
 
             while (message != "/exit")
             {
-                message =   Console.ReadLine();
+                message = Console.ReadLine() ?? string.Empty;
                 byte[] messageBytes = Encoding.ASCII.GetBytes(message);
-                clientSocket.send(messageBytes);
+                clientSocket.Send(messageBytes);
             }
 
             clientSocket.Shutdown(SocketShutdown.Both);
             clientSocket.Close();
+        }
+        catch (SocketException ex)
+        {
+            Console.WriteLine($"Error connecting to the server: {ex.Message}");
         }
     }
 
@@ -41,8 +47,8 @@ class Program
         {
             byte[] buffer = new byte[1024];
             int bytesReceived = clientSocket.Receive(buffer);
-            string message = Encoding.ASCII.GetString(buffer, 0, bytesReceived);
-            Console.WriteLine(message);
+            string receivedMessage = Encoding.ASCII.GetString(buffer, 0, bytesReceived) ?? string.Empty;
+            Console.WriteLine(receivedMessage);
         }
     }
 }
